@@ -48,23 +48,9 @@ to: packages/<%= pkgName.replace('ds-', '') %>/package.json
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "build": "tsup src/index.ts --format cjs,esm --dts"
   },
-  "dependencies": {
-    "next": "^14",
-    "react": "^18",
-    "react-dom": "^18"
-  },
-  "peerDependencies": {
-    "next": "^14",
-    "react": "^18",
-    "react-dom": "^18"
-  },
   "devDependencies": {
-    "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
     "@repo/tailwind-config": "*",
-    "@types/node": "^22",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
     "tsup": "^8.3.0",
     "typescript": "^5.6.3"
   }

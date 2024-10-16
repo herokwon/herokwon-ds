@@ -59,9 +59,7 @@ to: packages/ui/<%= category %>/package.json
     "react-dom": "^18"
   },
   "devDependencies": {
-    "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
-    "@repo/tailwind-config": "*",
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
