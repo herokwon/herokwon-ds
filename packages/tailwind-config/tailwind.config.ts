@@ -1,10 +1,12 @@
 import type { Config } from 'tailwindcss';
 
+import { extendedTheme } from '../config/src';
+
 const config: Config = {
   content: ['**/*.{js,ts,jsx,tsx,mdx}'],
   darkMode: 'class',
   theme: {
-    extend: {},
+    extend: { ...extendedTheme },
   },
   plugins: [],
 };
