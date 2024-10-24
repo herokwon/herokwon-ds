@@ -47,3 +47,194 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  notification:
+    name: Notify by Slack
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Checkout repository
+        uses: actions/github-script@v7
+        id: pr
+        with:
+          script: |
+            const result = (
+              await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                commit_sha: context.sha,
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              })
+            ).data[0];
+
+            return {
+              from: result.head.ref,
+              scope: result.head.ref.replace('dev/', ''),
+              number: result.number,
+              title: result.title,
+              url: result.html_url
+            }
+
+      - name: Notify on success
+        if: ${{ success() && needs.release.outputs.package_name != '' }}
+        id: slack-success
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          channel-id: '${{ secrets.SLACK_CHANNEL_ID }}'
+          payload: |
+            {
+              "attachments": [
+                {
+                  "color": "#36a64f",
+                  "blocks": [
+                    {
+                      "type": "header",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "✅ ${{ needs.release.outputs.package_name }} 패키지 배포 성공",
+                        "emoji": true
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Version:* `<https://npmjs.com/package/${{ needs.release.outputs.package_name }}/v/${{ needs.release.outputs.package_version }} | ${{ needs.release.outputs.package_version }}>`"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*From:* `<https://github.com/${{ github.repository }}/tree/${{ fromJSON(steps.pr.outputs.result).from }} | ${{ fromJSON(steps.pr.outputs.result).from }}>`"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Pull Request:*\n<${{ fromJSON(steps.pr.outputs.result).url }} | [#${{ fromJSON(steps.pr.outputs.result).number }}] ${{ fromJSON(steps.pr.outputs.result).title }}>"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Created by:* <https://github.com/${{ github.repository_owner }} | ${{ github.repository_owner }}>"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "actions",
+                      "elements": [
+                        {
+                          "type": "button",
+                          "text": {
+                            "type": "plain_text",
+                            "text": "View details: Commits 📝",
+                            "emoji": true
+                          },
+                          "url": "${{ fromJSON(steps.pr.outputs.result).url }}/commits"
+                        },
+                        {
+                          "type": "button",
+                          "text": {
+                            "type": "plain_text",
+                            "text": "View details: Github Actions 💡",
+                            "emoji": true
+                          },
+                          "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                        }
+                      ]
+                    }
+                  ]
+                } 
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Notify on failure
+        if: ${{ failure() && needs.release.outputs.changesets_outcome != 'cancelled' && needs.release.outputs.changesets_outcome != 'skipped' }}
+        id: slack-failure
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          channel-id: '${{ secrets.SLACK_CHANNEL_ID }}'
+          payload: |
+            {
+              "attachments": [
+                {
+                  "color": "#ff0000",
+                  "blocks": [
+                    {
+                      "type": "header",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "❌ @${{ github.repository_owner }}/${{ fromJSON(steps.pr.outputs.result).scope }} 패키지 배포 실패",
+                        "emoji": true
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*From:* `<https://github.com/${{ github.repository }}/tree/${{ fromJSON(steps.pr.outputs.result).from }} | ${{ fromJSON(steps.pr.outputs.result).from }}>`"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Pull Request:*\n<${{ fromJSON(steps.pr.outputs.result).url }} | [#${{ fromJSON(steps.pr.outputs.result).number }}] ${{ fromJSON(steps.pr.outputs.result).title }}>"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Created by:* <https://github.com/${{ github.repository_owner }} | ${{ github.repository_owner }}>"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "actions",
+                      "elements": [
+                        {
+                          "type": "button",
+                          "text": {
+                            "type": "plain_text",
+                            "text": "View details: Commits 📝",
+                            "emoji": true
+                          },
+                          "url": "${{ fromJSON(steps.pr.outputs.result).url }}/commits"
+                        },
+                        {
+                          "type": "button",
+                          "text": {
+                            "type": "plain_text",
+                            "text": "View details: Github Actions 💡",
+                            "emoji": true
+                          },
+                          "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
