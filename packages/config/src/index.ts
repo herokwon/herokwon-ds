@@ -44,3 +44,5 @@ export const extendedTheme: Partial<CustomThemeConfig> = {
   fill: customBgColor,
   opacity: customOpacity,
 };
+
+export { default as plugin } from './plugin';
